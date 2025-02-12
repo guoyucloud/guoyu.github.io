@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 6.0.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/favicon/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon/favicon-32x32-next.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon/favicon-16x16-next.ico">
+  <link rel="mask-icon" href="/images/favicon/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha256-dABdfBfUoC8vJUBOwGVdm8L9qlMWaHTIfXt+7GnZCIo=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.css" integrity="sha256-gkQVf8UKZgQ0HyuxL/VnacadJ+D2Kox2TCEBuNQg5+w=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"www.guoyu.ren","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.22.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12,"onmobile":false},"hljswrap":true,"copycode":{"enable":true,"style":null,"show_result":true},"fold":{"enable":false,"height":500},"bookmark":{"enable":true,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":true,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false,"trigger":"auto"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="advanced1.ts 类型兼容性： 当一个类型Y可以被赋值给另一个类型X时，我们就可以说类型X兼容类型Y X兼容Y:X(目标类型) &#x3D; Y(源类型)  口诀： 结构之间兼容：成员少的兼容成员多的 函数之间兼容：参数多的兼容参数少的  1234567891011121314151617181920212223242526272829303132333435363738394041424">
+<meta property="og:type" content="article">
+<meta property="og:title" content="16 | 类型检查机制（2）：类型兼容性">
+<meta property="og:url" content="https://www.guoyu.ren/2022/03/01/TypeScript/16-%E7%B1%BB%E5%9E%8B%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6%EF%BC%882%EF%BC%89%EF%BC%9A%E7%B1%BB%E5%9E%8B%E5%85%BC%E5%AE%B9%E6%80%A7/index.html">
+<meta property="og:site_name" content="WEB前端技术">
+<meta property="og:description" content="advanced1.ts 类型兼容性： 当一个类型Y可以被赋值给另一个类型X时，我们就可以说类型X兼容类型Y X兼容Y:X(目标类型) &#x3D; Y(源类型)  口诀： 结构之间兼容：成员少的兼容成员多的 函数之间兼容：参数多的兼容参数少的  1234567891011121314151617181920212223242526272829303132333435363738394041424">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-02-28T16:31:36.000Z">
+<meta property="article:modified_time" content="2025-02-12T03:59:29.265Z">
+<meta property="article:author" content="郭宇">
+<meta property="article:tag" content="TypeScript">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://www.guoyu.ren/2022/03/01/TypeScript/16-%E7%B1%BB%E5%9E%8B%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6%EF%BC%882%EF%BC%89%EF%BC%9A%E7%B1%BB%E5%9E%8B%E5%85%BC%E5%AE%B9%E6%80%A7/">
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://www.guoyu.ren/2022/03/01/TypeScript/16-%E7%B1%BB%E5%9E%8B%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6%EF%BC%882%EF%BC%89%EF%BC%9A%E7%B1%BB%E5%9E%8B%E5%85%BC%E5%AE%B9%E6%80%A7/","path":"2022/03/01/TypeScript/16-类型检查机制（2）：类型兼容性/","title":"16 | 类型检查机制（2）：类型兼容性"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>16 | 类型检查机制（2）：类型兼容性 | WEB前端技术</title>
+  
+
+  <script src="/js/third-party/analytics/baidu-analytics.js"></script>
+  <script async src="https://hm.baidu.com/hm.js?158b2594d3082ac3eca09cf1d72a68c5"></script>
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">WEB前端技术</p>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">郭宇</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>简历</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li><li class="menu-item menu-item-sitemap"><a href="/sitemap.xml" rel="section"><i class="fa fa-sitemap fa-fw"></i>站点地图</a></li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+      <div class="search-header">
+        <span class="search-icon">
+          <i class="fa fa-search"></i>
+        </span>
+        <div class="search-input-container">
+          <input autocomplete="off" autocapitalize="off" maxlength="80"
+                placeholder="搜索..." spellcheck="false"
+                type="search" class="search-input">
+        </div>
+        <span class="popup-btn-close" role="button">
+          <i class="fa fa-times-circle"></i>
+        </span>
+      </div>
+      <div class="search-result-container">
+        <div class="search-result-icon">
+          <i class="fa fa-spinner fa-pulse fa-5x"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%B1%BB%E5%9E%8B%E5%85%BC%E5%AE%B9%E6%80%A7%EF%BC%9A"><span class="nav-number">1.</span> <span class="nav-text">类型兼容性：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%A3%E8%AF%80%EF%BC%9A"><span class="nav-number">2.</span> <span class="nav-text">口诀：</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="郭宇"
+      src="/images/avatar/avatar.jpeg">
+  <p class="site-author-name" itemprop="name">郭宇</p>
+  <div class="site-description" itemprop="description">多听，少说，接受每一个人的责难，但是保留你的最后裁决。</div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">19</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+          <a href="/categories/">
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">2</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/guoyucloud" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;guoyucloud" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:120098866@qq.com" title="E-Mail → mailto:120098866@qq.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></a>
+  </div>
+
+        </div>
+      </div>
+        <div class="back-to-top animated" role="button" aria-label="返回顶部">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+    </div>
+
+    
+    <div class="sidebar-inner sidebar-blogroll">
+      <div class="links-of-blogroll animated">
+        <div class="links-of-blogroll-title"><i class="fa fa-link fa-fw"></i>
+          链接
+        </div>
+        <ul class="links-of-blogroll-list">
+            <li class="links-of-blogroll-item">
+              <a href="https://www.guoyucloud.com/" title="https:&#x2F;&#x2F;www.guoyucloud.com&#x2F;" rel="noopener" target="_blank">GuoYuCloud</a>
+            </li>
+            <li class="links-of-blogroll-item">
+              <a href="https://tinypng.com/" title="https:&#x2F;&#x2F;tinypng.com&#x2F;" rel="noopener" target="_blank">图片压缩</a>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://www.guoyu.ren/2022/03/01/TypeScript/16-%E7%B1%BB%E5%9E%8B%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6%EF%BC%882%EF%BC%89%EF%BC%9A%E7%B1%BB%E5%9E%8B%E5%85%BC%E5%AE%B9%E6%80%A7/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar/avatar.jpeg">
+      <meta itemprop="name" content="郭宇">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="WEB前端技术">
+      <meta itemprop="description" content="多听，少说，接受每一个人的责难，但是保留你的最后裁决。">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="16 | 类型检查机制（2）：类型兼容性 | WEB前端技术">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          16 | 类型检查机制（2）：类型兼容性
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2022-03-01 00:31:36" itemprop="dateCreated datePublished" datetime="2022-03-01T00:31:36+08:00">2022-03-01</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2025-02-12 11:59:29" itemprop="dateModified" datetime="2025-02-12T11:59:29+08:00">2025-02-12</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-folder"></i>
+      </span>
+      <span class="post-meta-item-text">分类于</span>
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/learning/" itemprop="url" rel="index"><span itemprop="name">学习路径</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/learning/web/" itemprop="url" rel="index"><span itemprop="name">前端工程师</span></a>
+        </span>
+          ，
+        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+          <a href="/categories/learning/web/TypeScript/" itemprop="url" rel="index"><span itemprop="name">TypeScript</span></a>
+        </span>
+    </span>
+
+  
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>2.7k</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>2 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p><code>advanced1.ts</code></p>
+<h3 id="类型兼容性："><a href="#类型兼容性：" class="headerlink" title="类型兼容性："></a><strong>类型兼容性：</strong></h3><blockquote>
+<p><strong>当一个类型Y可以被赋值给另一个类型X时，我们就可以说类型X兼容类型Y</strong></p>
+<p><strong>X兼容Y:X(目标类型) &#x3D; Y(源类型)</strong></p>
+</blockquote>
+<h3 id="口诀："><a href="#口诀：" class="headerlink" title="口诀："></a><strong>口诀：</strong></h3><blockquote>
+<p><strong>结构之间兼容：成员少的兼容成员多的</strong></p>
+<p><strong>函数之间兼容：参数多的兼容参数少的</strong></p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;* </span><br><span class="line">* X 兼容 Y: X(目标类型) &#x3D; Y(源类型)</span><br><span class="line">*&#x2F;</span><br><span class="line"></span><br><span class="line">let s: string &#x3D; &#39;a&#39;</span><br><span class="line">s &#x3D; null;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 接口兼容性</span><br><span class="line">interface X &#123;</span><br><span class="line">    a: any;</span><br><span class="line">    b: any;</span><br><span class="line">&#125;</span><br><span class="line">interface Y &#123;</span><br><span class="line">    a: any;</span><br><span class="line">    b: any;</span><br><span class="line">    c: any;</span><br><span class="line">&#125;</span><br><span class="line">let x: X &#x3D; &#123;a: 1, b: 2&#125;</span><br><span class="line">let y: Y &#x3D; &#123;a: 1, b: 2, c: 3&#125;</span><br><span class="line">x &#x3D; y;</span><br><span class="line">&#x2F;&#x2F; 函数兼容性</span><br><span class="line">type Handler &#x3D; (a: number, b: number) &#x3D;&gt; void</span><br><span class="line">function hof(Handler: Handler) &#123;</span><br><span class="line">    return Handler</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;1)参数个数</span><br><span class="line">let handler1 &#x3D; (a: number) &#x3D;&gt; &#123;&#125;</span><br><span class="line">hof(handler1)</span><br><span class="line">let handler2 &#x3D; (a: number, b: number, c:number) &#x3D;&gt; &#123;&#125;</span><br><span class="line">&#x2F;&#x2F; hof(handler2)</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 可选参数和生育参数</span><br><span class="line">let a &#x3D; (p1: number, p2: number) &#x3D;&gt; &#123;&#125;</span><br><span class="line">let b&#x3D; (p1?: number, p2?: number) &#x3D;&gt; &#123;&#125;</span><br><span class="line">let c &#x3D; (...args: number[]) &#x3D;&gt; &#123;&#125;</span><br><span class="line">a &#x3D; b</span><br><span class="line">a &#x3D; c </span><br><span class="line">b &#x3D; c</span><br><span class="line">b &#x3D; a </span><br><span class="line">c &#x3D; a </span><br><span class="line">c &#x3D; b</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;2)参数类型</span><br><span class="line">let handler3 &#x3D; (a: string) &#x3D;&gt; &#123;&#125;</span><br><span class="line">&#x2F;&#x2F; hof(handler3)</span><br><span class="line"></span><br><span class="line">interface Point3D &#123;</span><br><span class="line">    x: number;</span><br><span class="line">    y: number;</span><br><span class="line">    z: number;</span><br><span class="line">&#125;</span><br><span class="line">interface Point2D &#123;</span><br><span class="line">    x: number;</span><br><span class="line">    y: number;</span><br><span class="line">&#125;</span><br><span class="line">let p3d &#x3D; (point: Point3D) &#x3D;&gt; &#123;&#125;;</span><br><span class="line">let p2d &#x3D; (point: Point2D) &#x3D;&gt; &#123;&#125;;</span><br><span class="line">p3d &#x3D; p2d </span><br><span class="line">p2d &#x3D; p3d </span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F;3)返回值类型</span><br><span class="line">let f &#x3D; () &#x3D;&gt; (&#123;name: &#39;Alice&#39;&#125;);</span><br><span class="line">let g &#x3D; () &#x3D;&gt; (&#123;name: &#39;Alice&#39;, location: &#39;Beijing&#39;&#125;);</span><br><span class="line">f &#x3D; g</span><br><span class="line">&#x2F;&#x2F; g &#x3D; f</span><br><span class="line"></span><br><span class="line">function overload(a: number, b: number): number;</span><br><span class="line">function overload(a: string, b: string): string;</span><br><span class="line">function overload(a: any, b: any): any &#123;&#125;</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 枚举兼容性</span><br><span class="line">enum Fruit &#123; Apple, Banana &#125;</span><br><span class="line">enum Color &#123; Red, Yellow &#125;</span><br><span class="line">let fruit: Fruit.Apple &#x3D; 3</span><br><span class="line">let no: number &#x3D; Fruit.Apple</span><br><span class="line">let color: Color.Red &#x3D; Fruit.Apple</span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 类兼容性</span><br><span class="line">class A &#123;</span><br><span class="line">    constructor(p: number, q: number) &#123;&#125;</span><br><span class="line">    id: number &#x3D; 1</span><br><span class="line">    private name: string &#x3D; &#39;&#39;</span><br><span class="line">&#125;</span><br><span class="line">class B &#123;</span><br><span class="line">    static s &#x3D; 1</span><br><span class="line">    constructor(p: number) &#123;&#125;</span><br><span class="line">    id: number &#x3D; 2</span><br><span class="line">    private name: string &#x3D; &#39;&#39;</span><br><span class="line">&#125;</span><br><span class="line">let aa &#x3D; new A(1, 2);</span><br><span class="line">let bb &#x3D; new B(1)</span><br><span class="line">&#x2F;&#x2F; aa &#x3D; bb</span><br><span class="line">&#x2F;&#x2F; bb &#x3D; aa</span><br><span class="line">class C extends A &#123;&#125;</span><br><span class="line">let cc &#x3D; new C(1, 2)</span><br><span class="line">aa &#x3D; cc </span><br><span class="line">cc &#x3D; aa </span><br><span class="line"></span><br><span class="line">&#x2F;&#x2F; 泛型兼容性</span><br><span class="line">interface Empty&lt;T&gt; &#123;</span><br><span class="line">    value: T</span><br><span class="line">&#125;</span><br><span class="line">&#x2F;&#x2F; let obj1: Empty&lt;number&gt; &#x3D; &#123;&#125;;</span><br><span class="line">&#x2F;&#x2F; let obj2: Empty&lt;string&gt; &#x3D; &#123;&#125;;</span><br><span class="line">&#x2F;&#x2F; obj1 &#x3D; obj2</span><br><span class="line"></span><br><span class="line">let log1 &#x3D; &lt;T&gt;(x: T): T &#x3D;&gt; &#123;</span><br><span class="line">    console.log(&#39;x&#39;)</span><br><span class="line">    return x</span><br><span class="line">&#125;</span><br><span class="line">let log2 &#x3D; &lt;U&gt;(y: U): U &#x3D;&gt; &#123;</span><br><span class="line">    console.log(&#39;y&#39;)</span><br><span class="line">    return y</span><br><span class="line">&#125;</span><br><span class="line">log1 &#x3D; log2</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          <div class="reward-container">
+  <div>请我一杯咖啡吧！</div>
+  <button>
+    赞赏
+  </button>
+  <div class="post-reward">
+      <div>
+        <img src="/images/pay/wechatpay.png" alt="郭宇 微信">
+        <span>微信</span>
+      </div>
+      <div>
+        <img src="/images/pay/alipay.png" alt="郭宇 支付宝">
+        <span>支付宝</span>
+      </div>
+
+  </div>
+</div>
+
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>郭宇
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://www.guoyu.ren/2022/03/01/TypeScript/16-%E7%B1%BB%E5%9E%8B%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6%EF%BC%882%EF%BC%89%EF%BC%9A%E7%B1%BB%E5%9E%8B%E5%85%BC%E5%AE%B9%E6%80%A7/" title="16 | 类型检查机制（2）：类型兼容性">https://www.guoyu.ren/2022/03/01/TypeScript/16-类型检查机制（2）：类型兼容性/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/ts/" rel="tag"><i class="fa fa-tag"></i> TypeScript</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2022/02/28/TypeScript/15-%E7%B1%BB%E5%9E%8B%E6%A3%80%E6%9F%A5%E6%9C%BA%E5%88%B6%EF%BC%881%EF%BC%89%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E6%96%AD/" rel="prev" title="15 | 类型检查机制（1）：类型推断">
+                  <i class="fa fa-angle-left"></i> 15 | 类型检查机制（1）：类型推断
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+    <div class="comments gitalk-container"></div>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 2020 – 
+    <span itemprop="copyrightYear">2025</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">郭宇</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">19k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">17 分钟</span>
+  </span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="reading-progress-bar"></div>
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+  <a href="https://github.com/guoyucloud" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fancyapps-ui/5.0.31/fancybox/fancybox.umd.js" integrity="sha256-a+H7FYzJv6oU2hfsfDGM2Ohw/cR9v+hPfxHCLdmCrE8=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lozad.js/1.16.0/lozad.min.js" integrity="sha256-mOFREFhqmHeQbXpK2lp4nA3qooVgACfh88fpJftLBbc=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script><script src="/js/bookmark.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous"></script>
+<script src="/js/third-party/search/local-search.js"></script>
+
+
+
+
+  <script src="/js/third-party/fancybox.js"></script>
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.css" integrity="sha256-AJnUHL7dBv6PGaeyPQJcgQPDjt/Hn/PvYZde1iqfp8U=" crossorigin="anonymous">
+
+<script class="next-config" data-name="gitalk" type="application/json">{"enable":true,"github_id":"guoyucloud","repo":"hexo-io-blog-comments","client_id":"21d74e3fce6435f97d33","client_secret":"f97e08dabe144c1f059b9c38d9dd6604707beb3a","admin_user":"guoyucloud","distraction_free_mode":true,"proxy":"https://cors-anywhere.azm.workers.dev/https://github.com/login/oauth/access_token","language":"zh-CN","js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/gitalk/1.8.0/gitalk.min.js","integrity":"sha256-MVK9MGD/XJaGyIghSVrONSnoXoGh3IFxLw0zfvzpxR4="},"path_md5":"e34e9a3b48b25312e8e30da9ce567b46"}</script>
+<script src="/js/third-party/comments/gitalk.js"></script>
+
+</body>
+</html>
